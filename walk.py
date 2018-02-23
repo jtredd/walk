@@ -1,6 +1,22 @@
 #!/usr/bin/env python
 import sys
+import time
 
+def timeit(method):
+  def timed(*args, **kw):
+    ts = time.time()
+    result = method(*args, **kw)
+    te = time.time()
+
+    if 'log_time' in kw:
+      name = kw.get('log_name', method.__name__.upper())
+      kw['log_time'][name] = int((te - ts) * 1000)
+    else:
+      print('%r  %2.2f ms' % \
+          (method.__name__, (te - ts) * 1000))
+    return result
+  
+  return timed
 
 DURL = "http://www.udacity.com/cs101x/crawling.html"
 try:
@@ -48,7 +64,7 @@ def union(p,q):
         if e not in p:
             p.append(e)
 
-
+@timeit
 def get_all_links(page):
     links = []
     while True:
@@ -58,11 +74,12 @@ def get_all_links(page):
             page = page[endpos:]
         else:
             break
-        for v in links:
-          if len(v) > 1:
-            print(v)
+       # for v in links:
+          #if len(v) > 1:
+          #  print(v)
     return links
 
+@timeit
 def crawl_web(seed):
     tocrawl = [seed]
     crawled = []
@@ -74,4 +91,5 @@ def crawl_web(seed):
           print(crawled)
           print(tocrawl)
 
-crawl_web(get_all_links(page))
+if __name__ == '__main__':
+  crawl_web(get_all_links(page))

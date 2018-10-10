@@ -21,9 +21,8 @@ def get_all_links(page):
             page = page[endpos:]
         else:
             break
-        for v in links:
-          if len(v) > 1:
-            print(v)
+    #    for v in links:
+    #      if len(v) > 1:
     return links
 
 def union(p,q):
@@ -41,6 +40,23 @@ def crawl_web(seed):
       crawled.append(entry)
 
 
+#def unique(l):
+#  s = set(); n = 0
+#  for x in l:
+#    if x not in s: s.add(x); l[n] = x; n += 1
+#    del l[n:]
+
+def unique(items):
+    found = set([])
+    keep = []
+
+    for item in items:
+        if item not in found:
+            found.add(item)
+            keep.append(item)
+
+    return keep
+
 
 if __name__ == "__main__":
   import requests
@@ -48,4 +64,6 @@ if __name__ == "__main__":
   r = requests.get(target)
   if len(r.content) > 0:
     page = str(r.content)
-    crawl_web(target)
+    print(unique(get_all_links(page)))
+  
+

@@ -2,39 +2,7 @@
 import sys
 
 
-DURL = "http://www.udacity.com/cs101x/crawling.html"
-try:
-  import requests
-except ImportError() as e:
-  print(e.code)
-
-if len(sys.argv[1]) == 0:
-  url=DURL
-else:
-  url=sys.argv[1]
-
-r = requests.get(url)
-if r.content > 0:
-  page = r.content
-
-def get_page(url):
-    try:
-      if url == "":
-        print("Missing arg1.\n")
-        return ''
-      elif url == "https://jradd.com":
-        return ''
-    except:
-      if len(sys.argv[1] > 0):
-        url = sys.argv[1]
-      else:
-        url = DURL
-      return url
-    return ""
-
 def get_next_target(page):
-  if page==0:
-    page=req_page(url)
   start_link = page.find('<a href=')
   if start_link == -1: 
       return None, 0
@@ -42,11 +10,6 @@ def get_next_target(page):
   end_quote = page.find('"', start_quote + 1)
   url = page[start_quote + 1:end_quote]
   return url, end_quote
-
-def union(p,q):
-    for e in q:
-        if e not in p:
-            p.append(e)
 
 
 def get_all_links(page):
@@ -63,15 +26,26 @@ def get_all_links(page):
             print(v)
     return links
 
-def crawl_web(seed):
-    tocrawl = [seed]
-    crawled = []
-    while tocrawl:
-        page = tocrawl.pop()
-        if page not in crawled:
-          union(tocrawl, get_all_links(get_page(page)))
-          crawled.append(page)
-          print(crawled)
-          print(tocrawl)
+def union(p,q):
+    for e in q:
+        if e not in p:
+            p.append(e)
 
-crawl_web(get_all_links(page))
+def crawl_web(seed):
+  tocrawl = [seed]
+  crawled = []
+  while tocrawl:
+    entry = tocrawl.pop()
+    if entry not in crawled:
+      union(tocrawl, get_all_links(page))
+      crawled.append(entry)
+
+
+
+if __name__ == "__main__":
+  import requests
+  target = str(sys.argv[1])
+  r = requests.get(target)
+  if len(r.content) > 0:
+    page = str(r.content)
+    crawl_web(target)

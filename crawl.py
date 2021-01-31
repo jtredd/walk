@@ -1,42 +1,51 @@
-import requests
+class Web:
 
-crawled = list()
-tocrawl = set([])
-discard = set()
-depth = 0
+    wseed = set()
+    crawled = set()
+    tocrawl = list()
+    seed = 'https://www.example.com'
+    tocrawl.append(seed)
 
+    def __init__(self: str, max_depth: int):
+        self._tocrawl = [self]
+        tocrawl = set()
+        self.next_depth = list()
+        depth = 0
 
-def crawl(seed):
-    tocrawl = [seed]
-    while tocrawl:
-        entry = tocrawl.pop()
+def crawl(seed, max_depth):
+    _tocrawl=[seed]
+    crawled = list()
+    tocrawl = set()
+    next_depth = list()
+    depth = 0
+    while Web.tocrawl and depth <= max_depth:
+        entry = Web.tocrawl.pop()
         if entry not in crawled:
-            union(tocrawl, get_all_links(get_page(entry)))
-            crawled.append(entry)
-            get_pages(tocrawl)
+            print(entry)
+            union(Web.tocrawl, get_all_links(get_page(entry)))
+            Web.crawled.add(entry)
+#            tocrawl.add(normalize(entry, Web.seed))
+        if not _tocrawl:
+            Web.tocrawl, next_depth = next_depth, []
+            depth = depth + 1
 
-def get_pages(L: list) -> None:
-    global d
-    depth = len(crawled)
-    for l in L:
-        d = depth - 1
-        return get_all_links(get_page(l))
-    seed = l
+#        union(tocrawl, _tocrawl)
+#    return crawled, _tocrawl
+#            get_pages(tocrawl)
 
 def get_page(self: str) -> str:
+    import requests
     user_agent_string = 'curl/7.59.1'
     headers = requests.utils.default_headers()
     headers['User-Agent'] = user_agent_string
-    req = requests.get(self, headers=headers)
-    if req.status_code == 200:
-        crawled.append(self)
-        return req.text
-    return ""
-    print(f'{req.status_code}: {self}')
-    return None, 0
+    if isinstance(self, str): 
+        req = requests.get(normalize(self), headers=headers)
+        if req.status_code == 200:
+            Web.crawled.add(req.url)
+            return req.text
+        Web.crawled.add((req.url, self))
 
-def get_slice(self: str) -> (str(), int()):
-    print(self)
+def get_slice(self: str):
     start_link = self.find(' href')
     if start_link == -1:
         return None, 0
@@ -45,19 +54,35 @@ def get_slice(self: str) -> (str(), int()):
     url = self[start_pos+1:end_pos]
     return url, end_pos
 
+def normalize(self: str) -> str:
+    base_url = Web.seed
+    if base_url in self:
+        return self
+    if 'http' in self:
+        return
+    else:
+        return ''.join(('/'.join(base_url.split('/', 3)[0:3]), self))
+
+
+
 def get_all_links(page: str) -> str:
     links = []
+#    schema = dict()
     while True:
         url,endpos = get_slice(page)
         if url:
-            print(f'{crawled[depth]}')
-            links.append(make_absolute(url,base_url=crawled[depth], discard=False))
+#            print(f'{crawled[depth]}')
+#            links.append(make_absolute(url,base_url=crawled[depth], discard=False))
+            links.append(url)
             page = page[endpos:]
         else:
             break
-        [tocrawl.add(x) for x in links]
-
+#        Web.crawled.append(page[0])
+#    [Web.tocrawl.add(normalize(x, Web.seed)) for x in links]
+#    schema += {Web.seed: [Web.tocrawl.add(normalize(x, Web.seed)) for x in links]}
+#    print(schema)
     return links
+
 
 def make_absolute(self: str, base_url: str, discard=True) -> str:
     root = '/'.join(base_url.split('/', 3)[0:3])

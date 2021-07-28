@@ -1,123 +1,111 @@
+from requests import Session, Request, utils, exceptions
+
+#CERT = utils.DEFAULT_CA_BUNDLE_PATH
+CERT = 'cert.pem'
+HEADERS = utils.default_headers()
+UA_STRING = 'Curl 7/59.1'
+
+
 class Web:
+        crawled = set()
+        tocrawl = dict()
+        rel     = tuple()
+        seed    = tuple()
 
-    wseed = set()
-    crawled = set()
-    tocrawl = list()
-    #seed = 'https://www.example.com'
-    seed = 'https://packetstormsecurity.com/Crackers/wordlists/page4/'
-    tocrawl.append(seed)
+def print_url(r, *args, **kwargs):
+    print(r.url)
 
-    def __init__(self: str, max_depth: int):
-        self._tocrawl = [self]
-        tocrawl = set()
-        self.next_depth = list()
-        depth = 0
+def record_hook(r, *args, **kwargs):
+    r.hook_called = True
+    # catchme
+    Web.crawled.add(r.url)
+    return r
 
-def crawl(seed, max_depth):
-    _tocrawl=[seed]
-    crawled = list()
-    tocrawl = set()
-    next_depth = list()
-    depth = 0
-    while Web.tocrawl and depth <= max_depth:
-        entry = Web.tocrawl.pop()
-        if entry not in crawled:
-            print(entry)
-            union(Web.tocrawl, get_all_links(get_page(entry)))
-            Web.crawled.add(entry)
-#            tocrawl.add(normalize(entry, Web.seed))
-        if not _tocrawl:
-            Web.tocrawl, next_depth = next_depth, []
-            depth = depth + 1
+def get(url: str, ua_string=None):
+    """
+    function to get http response in text.
+    :return response object
+    """
+    headers = utils.default_headers()
+    headers['User-Agent'] = ua_string
+#    data=b'send exactly these bytes.'
+    hooks={'response': [print_url, record_hook]}
+    s = Session()
+    req = Request('GET', url, headers=headers, hooks=hooks)
+#    req.register_hook('request', hooks)
 
+    try:
+        prepped = s.prepare_request(req)
+        resp = s.send(prepped,
+                      stream=True,
+                      verify=True,
+                      proxies=None,
+                      cert='cert.pem',
+                      timeout=(3, 20)
+                     )
+    except Exception as e:
+        print(e, url)
+#        print('Perhaps you meant: \r\n{}'.format(''.join(
+#            (
+#                get_domain(Web.crawled[-1]),url
+#            )
+#        )))
+        return -1
 
-def crawl2(seed, max_depth):
-    __tocrawl=[seed]
-    __crawled=list()
-    __next_depth=list()
-    depth=0
-    while __tocrawl and depth <= max_depth:
-        entry = __tocrawl.pop()
-        if entry not in __crawled:
-            union(__tocrawl, get_all_links(get_page(entry)))
-            __crawled.append(entry)
-        if not __tocrawl:
-            __tocrawl, __next_depth = __next_depth, []
-            print(depth)
-            depth = depth + 1
-        Web.crawled = __tocrawl.copy
-#        union(tocrawl, _tocrawl)
-#    return crawled, _tocrawl
-#            get_pages(tocrawl)
+    return resp.text
 
-def get_page(self: str) -> str:
-    import requests
-    user_agent_string = 'curl/7.59.1'
-    headers = requests.utils.default_headers()
-    headers['User-Agent'] = user_agent_string
-    if isinstance(self, str): 
-        req = requests.get(normalize(self), headers=headers)
-        if req.status_code == 200:
-            Web.crawled.add(req.url)
-            return req.text
-        Web.crawled.add((req.url, self))
-
-def get_slice(self: str):
-    start_link = self.find(' href')
-    if start_link == -1:
+def get_next_target(page: str) -> tuple():
+    if isinstance(page, int):
         return None, 0
-    start_pos = self.find('"', start_link)
-    end_pos   = self.find('"', start_pos + 1)
-    url = self[start_pos+1:end_pos]
-    return url, end_pos
+    elif isinstance(page, str):
+        start_link = page.find('<a href')
+        if start_link == -1:
+            return None, 0
+        start_pos = page.find('"', start_link)
+        end_pos   = page.find('"', start_pos + 1)
+        url = page[start_pos+1:end_pos]
+        return url, end_pos
 
-def normalize(self: str) -> str:
-    base_url = Web.seed
-    if base_url in self:
-        return self
-    if 'http' in self:
-        return
-    else:
-        return ''.join(('/'.join(base_url.split('/', 3)[0:3]), self))
-
-
-
-def get_all_links(page: str) -> str:
+def get_all_links(page: str) -> str():
     links = []
-#    schema = dict()
     while True:
-        url,endpos = get_slice(page)
+        url, endpos = get_next_target(page)
         if url:
-#            print(f'{crawled[depth]}')
-#            links.append(make_absolute(url,base_url=crawled[depth], discard=False))
             links.append(url)
             page = page[endpos:]
         else:
             break
-#        Web.crawled.append(page[0])
-#    [Web.tocrawl.add(normalize(x, Web.seed)) for x in links]
-#    schema += {Web.seed: [Web.tocrawl.add(normalize(x, Web.seed)) for x in links]}
-#    print(schema)
     return links
 
 
-def make_absolute(self: str, base_url: str, discard=True) -> str:
-    root = '/'.join(base_url.split('/', 3)[0:3])
-    if root in self:
-        return self
-    if 'http' in self and discard is False:
-        return self
-    elif 'http' in self and discard is True:
-        discard.add(self)
-    else:
-        return ''.join((root, self))
+def union(q: list, p: list):
+    for e in p:
+#        if q:
+        if e not in q:
+            q.append(e)
 
-def union(p: set, q: list) -> None:
-    for e in q:
-        if e not in p:
-            p.append(e)
+def crawl(seed, max_depth):
+    _tocrawl = [seed]
+    tocrawl = set()
+    crawled = []
+    next_depth = []
+    depth = 0
+    while _tocrawl and depth <= max_depth:
+        entry = _tocrawl.pop()  # empty
+        Web.tocrawl.update({depth: entry})
+        if entry not in crawled:
+            union(_tocrawl, get_all_links(get(entry)))
+            crawled.append(entry)
+        if not _tocrawl:
+            _tocrawl, next_depth = next_depth, []
+            depth = depth + 1
+#    return crawled, _tocrawl, tocrawl
+
+def get_domain(self: str) -> str:
+    return '/'.join(self.split('/', 3)[0:3])
 
 if __name__ == '__main__':
-    from sys import argv
-    seed = argv[1]
-    crawl2(seed, 1)
+#    url = 'https://www.example.com'
+#    url = 'http://localhost:8000/test1'
+    url = 'https://example.com'
+    print(crawl(url, 4))

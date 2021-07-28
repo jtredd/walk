@@ -3,7 +3,8 @@ class Web:
     wseed = set()
     crawled = set()
     tocrawl = list()
-    seed = 'https://www.example.com'
+    #seed = 'https://www.example.com'
+    seed = 'https://packetstormsecurity.com/Crackers/wordlists/page4/'
     tocrawl.append(seed)
 
     def __init__(self: str, max_depth: int):
@@ -29,6 +30,22 @@ def crawl(seed, max_depth):
             Web.tocrawl, next_depth = next_depth, []
             depth = depth + 1
 
+
+def crawl2(seed, max_depth):
+    __tocrawl=[seed]
+    __crawled=list()
+    __next_depth=list()
+    depth=0
+    while __tocrawl and depth <= max_depth:
+        entry = __tocrawl.pop()
+        if entry not in __crawled:
+            union(__tocrawl, get_all_links(get_page(entry)))
+            __crawled.append(entry)
+        if not __tocrawl:
+            __tocrawl, __next_depth = __next_depth, []
+            print(depth)
+            depth = depth + 1
+        Web.crawled = __tocrawl.copy
 #        union(tocrawl, _tocrawl)
 #    return crawled, _tocrawl
 #            get_pages(tocrawl)
@@ -103,4 +120,4 @@ def union(p: set, q: list) -> None:
 if __name__ == '__main__':
     from sys import argv
     seed = argv[1]
-    crawl(seed)
+    crawl2(seed, 1)
